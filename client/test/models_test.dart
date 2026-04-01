@@ -2,57 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sahaay/models/models.dart';
 
-// ─── Fake DocumentSnapshot ──────────────────────────────────────────────────
-// Minimal fake that provides `id` and `data()` without requiring Firebase
-// initialization.  Only the members used by fromDoc are implemented; everything
-// else throws UnimplementedError so the test fails fast if the production code
-// touches something unexpected.
-
-class FakeDocumentSnapshot implements DocumentSnapshot<Map<String, dynamic>> {
-  @override
-  final String id;
-  final Map<String, dynamic>? _data;
-
-  FakeDocumentSnapshot({required this.id, Map<String, dynamic>? data})
-      : _data = data;
-
-  @override
-  Map<String, dynamic>? data() => _data;
-
-  @override
-  bool get exists => _data != null;
-
-  // ── Unimplemented stubs ────────────────────────────────────────────────
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
-      '${invocation.memberName} is not implemented in FakeDocumentSnapshot');
-}
-
-// ─── Tests ──────────────────────────────────────────────────────────────────
-
 void main() {
   // ════════════════════════════════════════════════════════════════════════════
   // SahaayUser
   // ════════════════════════════════════════════════════════════════════════════
 
-  group('SahaayUser.fromDoc', () {
+  group('SahaayUser.fromMap', () {
     test('parses complete valid data', () {
       final now = DateTime(2025, 6, 15, 10, 30);
-      final doc = FakeDocumentSnapshot(
-        id: 'user-123',
-        data: {
-          'name': 'Alice',
-          'phone_number': '+911234567890',
-          'profile_photo_url': 'https://example.com/photo.jpg',
-          'location': const GeoPoint(28.6139, 77.2090),
-          'geohash': 'ttnfv2u',
-          'is_available_for_help': true,
-          'last_active': Timestamp.fromDate(now),
-        },
-      );
-
-      final user = SahaayUser.fromDoc(doc);
+      final user = SahaayUser.fromMap('user-123', {
+        'name': 'Alice',
+        'phone_number': '+911234567890',
+        'profile_photo_url': 'https://example.com/photo.jpg',
+        'location': const GeoPoint(28.6139, 77.2090),
+        'geohash': 'ttnfv2u',
+        'is_available_for_help': true,
+        'last_active': Timestamp.fromDate(now),
+      });
 
       expect(user.userId, 'user-123');
       expect(user.name, 'Alice');
@@ -66,9 +32,7 @@ void main() {
     });
 
     test('handles missing / null fields with safe defaults', () {
-      final doc = FakeDocumentSnapshot(id: 'user-empty', data: {});
-
-      final user = SahaayUser.fromDoc(doc);
+      final user = SahaayUser.fromMap('user-empty', {});
 
       expect(user.userId, 'user-empty');
       expect(user.name, '');
@@ -86,20 +50,15 @@ void main() {
     });
 
     test('handles explicit null values in map', () {
-      final doc = FakeDocumentSnapshot(
-        id: 'user-nulls',
-        data: {
-          'name': null,
-          'phone_number': null,
-          'profile_photo_url': null,
-          'location': null,
-          'geohash': null,
-          'is_available_for_help': null,
-          'last_active': null,
-        },
-      );
-
-      final user = SahaayUser.fromDoc(doc);
+      final user = SahaayUser.fromMap('user-nulls', {
+        'name': null,
+        'phone_number': null,
+        'profile_photo_url': null,
+        'location': null,
+        'geohash': null,
+        'is_available_for_help': null,
+        'last_active': null,
+      });
 
       expect(user.name, '');
       expect(user.phoneNumber, '');
@@ -140,56 +99,16 @@ void main() {
   // SosEvent
   // ════════════════════════════════════════════════════════════════════════════
 
-  group('SosEvent.fromDoc', () {
-    test('parses complete valid data', () {
-      final ts = DateTime(2025, 3, 10, 14, 0);
-      final doc = FakeDocumentSnapshot(
-        id: 'sos-001',
-        data: {
-          'triggered_by': 'user-abc',
-          'location': const GeoPoint(12.9716, 77.5946),
-          'timestamp': Timestamp.fromDate(ts),
-          'status': 'ACTIVE',
-          'responders': ['resp-1', 'resp-2'],
-        },
-      );
-
-      final event = SosEvent.fromDoc(doc);
-
-      expect(event.sosId, 'sos-001');
-      expect(event.triggeredBy, 'user-abc');
-      expect(event.location.latitude, 12.9716);
-      expect(event.location.longitude, 77.5946);
-      expect(event.timestamp, ts);
-      expect(event.status, SosStatus.active);
-      expect(event.responders, ['resp-1', 'resp-2']);
-    });
-
-    test('defaults when all fields are missing', () {
-      final doc = FakeDocumentSnapshot(id: 'sos-empty', data: {});
-
-      final event = SosEvent.fromDoc(doc);
-
-      expect(event.sosId, 'sos-empty');
-      expect(event.triggeredBy, '');
-      expect(event.location, const GeoPoint(0, 0));
-      expect(event.status, SosStatus.active);
-      expect(event.responders, isEmpty);
-    });
-  });
-
   group('SosEvent.fromMap', () {
     test('parses with GeoPoint location', () {
       final ts = DateTime(2025, 5, 20, 8, 0);
-      final map = <String, dynamic>{
+      final event = SosEvent.fromMap('sos-map-1', {
         'triggered_by': 'user-xyz',
         'location': const GeoPoint(19.076, 72.8777),
         'timestamp': Timestamp.fromDate(ts),
         'status': 'RESOLVED',
         'responders': ['r1'],
-      };
-
-      final event = SosEvent.fromMap('sos-map-1', map);
+      });
 
       expect(event.sosId, 'sos-map-1');
       expect(event.triggeredBy, 'user-xyz');
@@ -201,15 +120,13 @@ void main() {
     });
 
     test('parses with lat/lng map location (Cloud Function response)', () {
-      final map = <String, dynamic>{
+      final event = SosEvent.fromMap('sos-map-2', {
         'triggered_by': 'user-cf',
         'location': {'lat': 13.0827, 'lng': 80.2707},
         'timestamp': '2025-05-20T08:00:00.000',
         'status': 'EXPIRED',
         'responders': [],
-      };
-
-      final event = SosEvent.fromMap('sos-map-2', map);
+      });
 
       expect(event.location.latitude, 13.0827);
       expect(event.location.longitude, 80.2707);
@@ -218,14 +135,12 @@ void main() {
     });
 
     test('handles null location map values', () {
-      final map = <String, dynamic>{
+      final event = SosEvent.fromMap('sos-null', {
         'location': {'lat': null, 'lng': null},
         'timestamp': null,
         'status': null,
         'responders': null,
-      };
-
-      final event = SosEvent.fromMap('sos-null', map);
+      });
 
       expect(event.location.latitude, 0);
       expect(event.location.longitude, 0);
@@ -234,7 +149,7 @@ void main() {
     });
 
     test('handles completely missing fields', () {
-      final event = SosEvent.fromMap('sos-bare', <String, dynamic>{});
+      final event = SosEvent.fromMap('sos-bare', {});
 
       expect(event.sosId, 'sos-bare');
       expect(event.triggeredBy, '');
@@ -246,60 +161,31 @@ void main() {
   group('SosStatus enum parsing', () {
     test('parses lowercase status strings', () {
       for (final status in SosStatus.values) {
-        final doc = FakeDocumentSnapshot(
-          id: 'sos-${status.name}',
-          data: {'status': status.name},
-        );
-        final event = SosEvent.fromDoc(doc);
+        final event = SosEvent.fromMap('sos-${status.name}', {
+          'status': status.name,
+        });
         expect(event.status, status);
       }
     });
 
     test('parses uppercase status strings', () {
       for (final status in SosStatus.values) {
-        final doc = FakeDocumentSnapshot(
-          id: 'sos-${status.name}',
-          data: {'status': status.name.toUpperCase()},
-        );
-        final event = SosEvent.fromDoc(doc);
+        final event = SosEvent.fromMap('sos-${status.name}', {
+          'status': status.name.toUpperCase(),
+        });
         expect(event.status, status);
       }
     });
 
     test('falls back to active for unknown status', () {
-      final doc = FakeDocumentSnapshot(
-        id: 'sos-x',
-        data: {'status': 'UNKNOWN_VALUE'},
-      );
-      final event = SosEvent.fromDoc(doc);
+      final event = SosEvent.fromMap('sos-x', {
+        'status': 'UNKNOWN_VALUE',
+      });
       expect(event.status, SosStatus.active);
     });
   });
 
   group('SosEvent.toMap roundtrip', () {
-    test('fromDoc -> toMap preserves core fields', () {
-      final ts = DateTime(2025, 7, 1, 12, 0);
-      final doc = FakeDocumentSnapshot(
-        id: 'rt-1',
-        data: {
-          'triggered_by': 'uid-rt',
-          'location': const GeoPoint(40.7128, -74.0060),
-          'timestamp': Timestamp.fromDate(ts),
-          'status': 'RESOLVED',
-          'responders': ['a', 'b'],
-        },
-      );
-
-      final event = SosEvent.fromDoc(doc);
-      final map = event.toMap();
-
-      expect(map['triggered_by'], 'uid-rt');
-      expect(map['location'], const GeoPoint(40.7128, -74.0060));
-      expect(map['timestamp'], Timestamp.fromDate(ts));
-      expect(map['status'], 'RESOLVED');
-      expect(map['responders'], ['a', 'b']);
-    });
-
     test('fromMap -> toMap preserves core fields', () {
       final ts = DateTime(2025, 7, 1, 12, 0);
       final input = <String, dynamic>{

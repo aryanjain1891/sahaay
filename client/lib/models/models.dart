@@ -25,8 +25,12 @@ class SahaayUser {
 
   factory SahaayUser.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
+    return SahaayUser.fromMap(doc.id, d);
+  }
+
+  factory SahaayUser.fromMap(String id, Map<String, dynamic> d) {
     return SahaayUser(
-      userId: doc.id,
+      userId: id,
       name: d['name'] ?? '',
       phoneNumber: d['phone_number'] ?? '',
       profilePhotoUrl: d['profile_photo_url'],
