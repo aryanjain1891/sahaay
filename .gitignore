@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Build outputs
+functions/lib/
+client/build/
+client/.dart_tool/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Env
+.env
+.env.*

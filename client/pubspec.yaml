@@ -1,0 +1,41 @@
+name: sahaay
+description: Hyperlocal Emergency Response Network
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase (COMPATIBLE SET)
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.4.0
+  firebase_messaging: ^15.1.0
+  cloud_functions: ^5.1.0
+
+  # Location
+  geolocator: ^12.0.0
+  geoflutterfire_plus: ^0.0.32
+
+  # UI / UX
+  pinput: ^6.0.0
+  google_maps_flutter: ^2.6.0
+  url_launcher: ^6.3.0
+  flutter_local_notifications: ^18.0.0
+
+  # Utils
+  uuid: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 3.0.2
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

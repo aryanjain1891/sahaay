@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users ──────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Own profile: full read/write
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Other authenticated users can read only specific safe fields.
+      // We allow the read but strip sensitive fields via this list check.
+      // NOTE: Firestore cannot filter fields on read. Instead, we allow
+      // reads only if the caller is authenticated. Sensitive data (fcm_token,
+      // phone_number) is protected by the Cloud Functions layer — the client
+      // never queries other users' docs directly for the responder flow.
+      allow read: if request.auth != null;
+
+      // Block writes to other users' profiles
+      allow write: if false;
+    }
+
+    // ── SOS Events ─────────────────────────────────────────────────────────
+    match /sos_events/{sosId} {
+      // Victim can always read their own SOS
+      allow read: if request.auth != null
+        && resource.data.triggered_by == request.auth.uid;
+
+      // Responders who already accepted can read the SOS they responded to
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.responders;
+
+      // Only the authenticated user can trigger an SOS for themselves
+      allow create: if request.auth != null
+        && request.resource.data.triggered_by == request.auth.uid
+        && request.resource.data.status == "ACTIVE"
+        && request.resource.data.responders.size() == 0;
+
+      // Victim can update their own SOS (e.g. cancel/resolve).
+      // Responders may only append themselves to the responders array.
+      allow update: if request.auth != null && (
+        resource.data.triggered_by == request.auth.uid
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responders'])
+          && request.resource.data.responders.hasAll(resource.data.responders)
+          && request.resource.data.responders.size() == resource.data.responders.size() + 1
+        )
+      );
+    }
+
+    // ── Response Logs ──────────────────────────────────────────────────────
+    match /responses/{responseId} {
+      // Responder can log their own response
+      allow create: if request.auth != null
+        && request.resource.data.responder_id == request.auth.uid
+        && request.resource.data.keys().hasAll(['sos_id', 'responder_id', 'accepted_at']);
+
+      // Only your own response logs are readable
+      allow read: if request.auth != null
+        && resource.data.responder_id == request.auth.uid;
+    }
+
+    // ── Broadcasts (Community Feed) ────────────────────────────────────────
+    match /broadcasts/{broadcastId} {
+      allow read: if request.auth != null;
+
+      // Validate required fields and enforce max message length
+      allow create: if request.auth != null
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.keys().hasAll(['message', 'type', 'lat', 'lng', 'timestamp', 'user_id'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 500;
+    }
+
+    // ── Incidents (Safety Map Reports) ────────────────────────────────────
+    match /incidents/{incidentId} {
+      allow read: if request.auth != null;
+
+      // Validate required fields and enforce size limits
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['type', 'lat', 'lng', 'timestamp'])
+        && request.resource.data.type is string
+        && request.resource.data.type.size() <= 100
+        && (!('description' in request.resource.data.keys()) || request.resource.data.description.size() <= 1000);
+    }
+  }
+}

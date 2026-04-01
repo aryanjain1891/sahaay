@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "791928970814",
+    "project_id": "sahaay-app-01-cf6e7",
+    "storage_bucket": "sahaay-app-01-cf6e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791928970814:android:5f0fd4a580867b308ffb6f",
+        "android_client_info": {
+          "package_name": "com.example.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqGSiqPwZhC6SPDaT7oc12BxBXXbtNKZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
